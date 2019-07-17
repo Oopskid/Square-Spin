@@ -3,6 +3,8 @@ The tools for the puzzle game Square Spin
 
 OFFLINE WEB
 ~~~~~
+Download this whole folder and open the webpage to start
+
 Controls: 
 
 Use the new button to create a new grid. This grid will be added to a list of grids that you can switch between by changing the numberbox to the right. You will be asked for the width and height of your grid by dialog so make sure it isn't blocked!
