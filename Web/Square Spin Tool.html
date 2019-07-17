@@ -3,10 +3,270 @@
 <head>
     <title>Square Spin</title>
     <link rel="shortcut icon" href="logo.png" />
-</head>
-
-<body>
+    <script type="text/javascript" src="spinfunc.js"></script>
     
-</body>
+    <script type="text/javascript">
+        var griconst = 2;
+        var grids = [];
+        var selfst = [0,0];
+        var selscd = [0, 0];
+        var selat = 0;
 
-</html>
+        function newgrid()
+        {
+            var grid = { a: [], size: { x: 0, y: 0 } };
+            grid.size.x = Number(prompt("Width"));
+            grid.size.y = Number(prompt("Height"));
+            for (var i = 0; i < grid.size.y; i++)
+            {
+                var ro = []
+                for (var i2 = 0; i2 < grid.size.x; i2++)
+                {
+                    ro.push({ col: document.getElementById("colpick").value, typ:document.getElementById("boxtype").value});
+                }
+                grid.a.push(ro);
+            }
+            document.getElementById("gridat").value = grids.length;
+            grids.push(grid);
+            loadgrid(grid);
+        }
+        function loadgrid(grid)
+        {
+            var tab = document.getElementById("grid");
+            tab.innerHTML = "";
+            tab.style.borderCollapse = "collapse";
+            var sizconst = Math.ceil(Math.min(window.innerWidth, window.innerHeight) / (griconst * Math.max(grid.size.x, grid.size.y)));
+
+            for (var i = 0; i < grid.size.y; i++)
+            {
+                var ro = tab.insertRow();
+                
+                for (var i2 = 0; i2 < grid.size.x; i2++)
+                {
+                    var bo = ro.insertCell();
+                    bo.style.width = sizconst + "px";
+                    bo.style.height = sizconst + "px";
+                    bo.style.border = Math.ceil(sizconst / 10) + "px solid";
+                    bo.style.padding = "0px";
+
+                    var canvas = document.createElement("canvas");
+                    canvas.width = sizconst;
+                    canvas.height = sizconst;
+                    canvas.style.display = "block";
+                    bo.appendChild(canvas);
+
+                    var dr = canvas.getContext("2d");
+                    dr.fillStyle = grid.a[i][i2].col;
+                    dr.fillRect(0, 0, sizconst, sizconst);
+
+                    dr.fillStyle = "rgb(0,0,0)";
+                    dr.lineWidth = Math.ceil(sizconst / 10);
+                    switch (Number(grid.a[i][i2].typ))
+                    {
+                        case 1: undraw(dr, sizconst); break;
+                        case 2: redraw(dr, sizconst); break;
+                        case 3: lydraw(dr, sizconst); break;
+                    }
+
+                    canvas.id = i + " " + i2;
+                    canvas.onmousedown = function (e) { mdowng(e.target.id.split(" ")); };
+                    canvas.onmouseup = function (e) { mupg(e.target.id.split(" ")); };
+                    canvas.onclick = function (e) { mclikg(e.target.id.split(" ")); };
+                }
+            }
+        }
+
+        function undraw(dr, sizconst)
+        {
+            dr.moveTo(0, 0);
+            dr.lineTo(sizconst, sizconst);
+            dr.moveTo(sizconst, 0);
+            dr.lineTo(0, sizconst);
+            dr.stroke();
+        }
+
+        function redraw(dr, sizconst)
+        {
+            var i = Math.ceil(sizconst / 2);
+            dr.arc(i, i, i, 0, 2 * Math.PI, false);
+            dr.stroke();
+        }
+
+        function lydraw(dr, sizconst)
+        {
+            var i = Math.ceil(sizconst / 4);
+            dr.strokeRect(i, i, i*2, i*2);
+        }
+
+        function displayindxgrid()
+        {
+            loadgrid(grids[curgri()]);
+        }
+
+        function mdowng(pt)
+        {
+            if (functyp() != 1)
+            {
+                if (selat != 2)
+                {
+                    selfst = pt;
+                    selat = 1;
+                }
+            }
+        }
+        function mupg(pt)
+        {
+            if (functyp() != 1) {
+                if (selat == 1) {
+                    if (Math.abs(pt[0] - selfst[0]) == Math.abs(pt[1] - selfst[1]))
+                    {
+                        selscd = pt;
+                        selat = 2;
+                        document.getElementById("desgribut").hidden = false;
+                        tablealph(selfst, selscd, 0.5);
+                    }
+                }
+            }
+        }
+        function mclikg(pt)
+        {
+            if (functyp() != 1) {
+                if (selat == 2)
+                {
+                    if (containspt(pt, selfst, selscd)) { findvalidandspin(grids[curgri()],selfst,selscd); }
+                    else { desgrid(); }
+                }
+            }
+            else
+            {
+                grids[curgri()].a[pt[0]][pt[1]].col = document.getElementById("colpick").value;
+                grids[curgri()].a[pt[0]][pt[1]].typ = document.getElementById("boxtype").value;
+                displayindxgrid();
+            }
+        }
+        function curgri()
+        {
+            return document.getElementById("gridat").value;
+        }
+
+        function bounds(strt, end)
+        {
+            return { ymx: Math.max(strt[0], end[0]), ymn: Math.min(strt[0], end[0]), xmx: Math.max(strt[1], end[1]), xmn: Math.min(strt[1], end[1]) };
+        }
+
+        function tablealph(strt, end, alpha)
+        {
+            var t = bounds(strt,end);
+            var tab = document.getElementById("grid");
+            var alph255 = 255 * (1-alpha);
+            for (var i = t.ymn; i <= t.ymx; i++)
+            {
+                var ro = tab.rows[i];
+                for (var i2 = t.xmn; i2 <= t.xmx; i2++)
+                {
+                    var bo = ro.cells[i2];
+                    bo.style.opacity = alpha;
+                    bo.style.borderColor = "rgb(" + alph255 + "," + alph255 + "," + alph255 + ")";
+                }
+            }
+        }
+
+        function samept(one, two)
+        {
+            return one[0] == two[0] & one[1] == two[1];
+        }
+
+        function isvalid(grid,st,end,rotam)
+        {
+            var t = bounds(st, end);
+            for (var i = t.ymn; i <= t.ymx; i++)
+            {
+                for (var i2 = t.xmn; i2 <= t.xmx; i2++)
+                {
+                    var constdim = t.ymx - t.ymn;
+                    var compt = [i - t.ymn, i2 - t.xmn];
+                    
+                    switch (Number(grid.a[i][i2].typ))
+                    {
+                        case 1: if (!samept(rottran90(compt, constdim, rotam), compt)) { return false; } break;
+                        case 2: var pt = rotrevtran90(compt, constdim, rotam); if (grid.a[pt[0] + t.ymn][pt[1] + t.xmn].col != grid.a[i][i2].col) { return false; } break;
+                        case 3: var pt = rotrevtran90(compt, constdim, rotam); if (grid.a[pt[0] + t.ymn][pt[1] + t.xmn].col == grid.a[i][i2].col) { return false; } break;
+                    }
+                }
+            }
+            return true;
+        }
+
+        function findvalidandspin(grid, st, end)
+        {
+            for (var i = 1; i <= 3; i++)
+            {
+                if (isvalid(grid, st, end, i))
+                {
+                    rotate(grid, st, end, i);
+                    tablealph(selfst, selscd, 0.5);
+                    break;
+                }
+            }
+        }
+
+        function rotate(grid, st, end, rotam)
+        {
+            var savd = [];
+            var t = bounds(st, end);
+            //lift
+            for (var i = t.ymn; i <= t.ymx; i++)
+            {
+                var ro = [];
+                for (var i2 = t.xmn; i2 <= t.xmx; i2++)
+                {
+                    var rotd = rotrevtran90([i - t.ymn, i2 - t.xmn], t.ymx - t.ymn, rotam);
+                    ro.push(grid.a[rotd[0] + t.ymn][rotd[1] + t.xmn]);
+                }
+                savd.push(ro);
+            }
+            //drop
+            for (var i = 0; i < savd.length; i++)
+            {
+                for (var i2 = 0; i2 < savd[i].length; i2++)
+                {
+                    grid.a[i + t.ymn][i2 + t.xmn] = savd[i][i2];
+                }
+            }
+            displayindxgrid();
+            alert(rotam);
+        }
+
+        function functyp()
+        {
+            return Number(document.getElementById("functype").value);
+        }
+        function desgrid()
+        {
+            tablealph(selfst, selscd, 1);
+            selat = 0;
+            document.getElementById("desgribut").hidden = true;
+        }
+    </script>
+
+</head >
+
+            <body>
+                <button type="button" onclick="newgrid()">New</button>
+                <button type="button" id="desgribut" onclick="desgrid()" hidden>Deselect</button>
+                <input type="number" id="gridat" value="0" onchange="displayindxgrid()">
+                <select id="boxtype">
+                    <option value="0">Colour</option>
+                    <option value="1">Unmovable</option>
+                    <option value="2">Replaceable</option>
+                    <option value="3">Lonely</option>
+                </select>
+                <input type="color" id="colpick" value="#FFFFFF">
+                <select id="functype" onchange="desgrid()">
+                    <option value="0">Test</option>
+                    <option value="1">Edit</option>
+                </select>
+                <table id="grid"></table>
+            </body>
+
+</html >
