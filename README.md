@@ -3,6 +3,7 @@ The tools for the puzzle game Square Spin
 
 OFFLINE WEB
 ~~~~~
+Tested on: Google Chrome with HTML 5 and Javascript
 Download this whole folder and open the webpage to start
 
 Controls: 
